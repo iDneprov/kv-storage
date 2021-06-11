@@ -7,6 +7,10 @@ local log = require('log')
 local server = http_server.new(nil, 8080)
 local router = http_router.new()
 
+box.cfg {
+    log = 'server.log'
+}
+
 local function render_error(request, status, error)
   resp = request:render{json = { error = error }}
   resp.status = status
