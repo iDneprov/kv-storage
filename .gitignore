@@ -46,3 +46,8 @@ luac.out
 .gitattributes
 .gitignore
 
+# Log files
+*.log
+*.xlog
+*.snap
+
