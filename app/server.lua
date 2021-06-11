@@ -1,35 +1,44 @@
 #!/usr/bin/env tarantool
 
+-- Подгрудаем необходимые модули
 local http_router = require('http.router')
 local http_server = require('http.server')
 local log = require('log')
 
+-- Вызываем конструктор для http сервера и роутера
 local server = http_server.new(nil, 8080)
 local router = http_router.new()
 
+-- Задаем конфигруацию
 box.cfg {
-    log = 'server.log'
+  log = 'server.log'
 }
 
-box.once('create', function()
-    box.schema.space.create('kv_store')
-    box.space.kv_store:format({
-        { name = 'key', type = 'string' },
-        { name = 'value', type = 'string' }
-    })
-    box.space.kv_store:create_index('primary',
-            { type = 'hash', parts = { 1, 'string' } })
+-- Задаем структуру базы данных и инициализируем её
+box.once('init', function()
+  box.schema.create_space('kv_storage')
+  box.space.kv_storage:format({
+    { name = 'key', type = 'string' },
+    { name = 'value', type = 'string' }
+  })
+  box.space.kv_storage:create_index('primary', { type = 'hash', parts = { 1, 'str' } })
 end)
 
+-- Функция обработки ошибок:
+--    возвращает ответ с нужным статусом и записывает ошибку в логи
 local function render_error(request, status, error)
-  resp = request:render{json = { error = error }}
-  resp.status = status
+  response = request:render{json = { error = error }}
+  response.status = status
   log.info(error)
-  return resp
+  return response
 end
 
+-- Функция извлечения JSON доби из ответа:
+--    извлекает боди и проверяет его на наличие необходимых данных
+--    возвращает либо боди, в случае наличия в нем всего необходимого,
+--    либо nil и ответ
 local function get_json_body(request)
-  local isCorrect
+  local isCorrect, body
   isCorrect, body = pcall(function() return request:json() end)
   if isCorrect then
     if type(body) == 'string' and body == nil then
@@ -45,54 +54,82 @@ local function get_json_body(request)
   end
 end
 
+-- Функця добавления нового набора ключ-значение в хранилище
 local function new(request)
-  local key, resp, body
-
-  body, resp = get_json_body(request)
+  local body, response, key, value, set
+  body, response = get_json_body(request)
   if body == nil then
-  	return resp
+  	return response
   end
-  if body['key'] == nil then
-    return render_error(request, 400, 'JSON_ERROR: JSON body have empty value')
+  key = body['key']
+  value = body['value']
+  if key == nil then
+    return render_error(request, 400, 'JSON_ERROR: JSON key have empty key')
   end
-  log.info("get(key: %s)" , key)
-  resp = request:render{json = {key = key, value = 'body'}}
-	resp.status = 200
-  return resp
+  set = box.space.kv_storage:get(key)
+  if set == nil then
+      box.space.kv_storage:insert { key, value }
+      log.info("Inserted %s", key)
+      response = request:render{json = { message = "Set was inserted"}}
+      response.status = 200
+      return response
+  else
+      return render_error(request, 409, 'STORAGE_ERROR: trying to insert set with existing key')
+  end
 end
 
+-- Функця изменения занчения в хранилище по ключу:
+--    Возвращает предидущее значение
 local function change(request)
-  local key, resp, body
-
+  local key, value, newValue, set, response, body
   key = request:stash('key')
-  body, resp = get_json_body(request)
-  if body == nil then
-  	return resp
+  if key == nil then
+    return render_error(request, 400, 'ADRESS_ERROR: key in adress have empty value')
   end
-  log.info("get(key: %s)" , key)
-  resp = request:render{json = {key = key, value = 'body'}}
-	resp.status = 200
-  return resp
+  body, response = get_json_body(request)
+  if body == nil then
+  	return response
+  end
+  newValue = body['value']
+  set = box.space.kv_storage:get(key)
+  if set == nil then
+      return render_error(request, 404, 'STORAGE_ERROR: trying to change value with non-existent key')
+  end
+  value = set['value']
+  box.space.kv_storage:update(key, { { '=', 2, newValue } })
+  log.info("Change %s" , key)
+  response = request:render{json = { value = value}}
+	response.status = 200
+  return response
 end
 
 local function get(request)
-  local key, resp
-
+  local key, value, set, response
   key = request:stash('key')
-  log.info("get(key: %s)" , key)
-  resp = request:render{json = {key = key, value = 'get'}}
-	resp.status = 200
-  return resp
+  set = box.space.kv_storage:get(key)
+  if set == nil then
+    return render_error(request, 404, 'STORAGE_ERROR: trying to get set with non-existent key')
+  end
+  value = set['value']
+  log.info("Get %s" , key)
+  response = request:render{json = {value = value}}
+	response.status = 200
+  return response
 end
 
 local function delete(request)
-  local key, resp
-
+  local key, value, set, response
   key = request:stash('key')
-  log.info("delite(key: %s)" , key)
-  resp = request:render{json = {key = key, value = 'delete'}}
-	resp.status = 200
-  return resp
+  set = box.space.kv_storage:get(key)
+  if set == nil then
+    return render_error(request, 404, 'STORAGE_ERROR: trying to delete set with non-existent key')
+  end
+  value = set['value']
+  log.info("Delite %s", key)
+  box.space.kv_storage:delete(key)
+  response = request:render{json = {value = value}}
+	response.status = 200
+  return response
 end
 
 server:set_router(router)
