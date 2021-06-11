@@ -11,6 +11,16 @@ box.cfg {
     log = 'server.log'
 }
 
+box.once('create', function()
+    box.schema.space.create('kv_store')
+    box.space.kv_store:format({
+        { name = 'key', type = 'string' },
+        { name = 'value', type = 'string' }
+    })
+    box.space.kv_store:create_index('primary',
+            { type = 'hash', parts = { 1, 'string' } })
+end)
+
 local function render_error(request, status, error)
   resp = request:render{json = { error = error }}
   resp.status = status
