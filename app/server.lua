@@ -7,30 +7,39 @@ local log = require('log')
 local server = http_server.new(nil, 8080)
 local router = http_router.new()
 
+local function render_error(request, status, error)
+  resp = request:render{json = { error = error }}
+  resp.status = status
+  log.info(error)
+  return resp
+end
+
 local function get_json_body(request)
   local isCorrect
   isCorrect, body = pcall(function() return request:json() end)
   if isCorrect then
-    if (type(body) ~= 'string' and body ~= nil and body['value'] ~= nil) then
-      return body
+    if type(body) == 'string' and body == nil then
+      return nil, render_error(request, 400, 'JSON_ERROR: JSON body is empty')
+    end
+    if body['value'] == nil then
+      return nil, render_error(request, 400, 'JSON_ERROR: JSON body have empty value')
     else
-      log.info("Error: JSON body have empty value")
-      return nil
+      return body
     end
   else
-      log.info("Error: JSON is not correct")
-      return nil
+      return nil, render_error(request, 400, 'JSON_ERROR: JSON is not correct')
   end
 end
 
 local function new(request)
   local key, resp, body
 
-  body = get_json_body(request)
+  body, resp = get_json_body(request)
   if body == nil then
-    resp = req:render{json = { error = 'invalid body' }}
-  	resp.status = 400
   	return resp
+  end
+  if body['key'] == nil then
+    return render_error(request, 400, 'JSON_ERROR: JSON body have empty value')
   end
   log.info("get(key: %s)" , key)
   resp = request:render{json = {key = key, value = 'body'}}
@@ -42,10 +51,8 @@ local function change(request)
   local key, resp, body
 
   key = request:stash('key')
-  body = get_json_body(request)
+  body, resp = get_json_body(request)
   if body == nil then
-    resp = request:render{json = { error = 'invalid body' }}
-  	resp.status = 400
   	return resp
   end
   log.info("get(key: %s)" , key)
