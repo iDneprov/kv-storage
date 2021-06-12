@@ -7,7 +7,10 @@ local http_server = require('http.server')
 local log = require('log')
 
 -- Вызываем конструктор для http сервера и роутера
-local server = http_server.new(nil, 8080)
+local server = http_server.new(
+    os.getenv("KV_ADRES"),
+    os.getenv("KV_PORT")
+)
 local router = http_router.new()
 
 -- Задаем конфигруацию
