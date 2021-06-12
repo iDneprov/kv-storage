@@ -1,4 +1,5 @@
 #!/usr/bin/env tarantool
+-- REST API kv-хранилище
 
 -- Подгружаем необходимые модули
 local http_router = require('http.router')
@@ -34,24 +35,22 @@ local function render_error(request, status, error)
 end
 
 -- Функция извлечения JSON доби из ответа:
---      извлекает боди и проверяет его на наличие необходимых данных
---      возвращает либо боди, в случае наличия в нем всего необходимого,
---      либо nil и ответ
+--      если в боди нет значения, возвращает nil и ответ со статусом 400 и описанием ошибки
+--      в остальных случаях возвращает боди
 local function get_json_body(request)
     local isCorrect, body
     isCorrect, body = pcall(function() return request:json() end)
-    if isCorrect then
-        if ((type(body) == 'string') and (body == nil)) or body['value'] == nil then
+    if (not isCorrect) or (((type(body) == 'string') and (body == nil)) or body['value'] == nil) then
             return nil, render_error(request, 400, 'JSON_ERROR: JSON body have empty key or value')
         else
             return body
         end
-    else
-            return nil, render_error(request, 400, 'JSON_ERROR: JSON body have empty key or value')
-    end
 end
 
--- Функця добавления нового набора ключ-значение в хранилище
+-- Функця добавления нового набора ключ-значение в хранилище:
+--      если в боди нет ключа, либо значения, возвращает ответ со статусом 400 и описанием ошибки
+--      если ключ уже есть в хранилище, возвращает ответ со статусом 409 и описанием ошибки
+--      в осатльных случах вставляет пару ключ-занчение и возвращает ответ со статусом 200
 local function new(request)
     local body, response, key, value, set
     log.info('New')
@@ -68,7 +67,7 @@ local function new(request)
     if set == nil then
         box.space.kv_storage:insert { key, value }
         log.info('ОК key: %s', key)
-        response = request:render{json = { message = 'Set was inserted'}}
+        response = request:render{json = { message = 'OK'}}
         response.status = 200
         return response
     else
@@ -77,7 +76,9 @@ local function new(request)
 end
 
 -- Функця изменения занчения в хранилище по ключу:
---      Возвращает предидущее значение
+--      если в боди нет значения, возвращает ответ со статусом 400 и описанием ошибки
+--      если ключа нет в хранилище, возвращает ответ со статусом 404 и описанием ошибки
+--      в осатльных случах изменяет значение и возвращает ответ со статусом 200 и предидущее значение
 local function change(request)
     local key, value, newValue, set, response, body
     log.info('Change')
@@ -102,6 +103,9 @@ local function change(request)
     return response
 end
 
+-- Функця получения занчения в хранилище по ключу:
+--      если ключа нет в хранилище, возвращает ответ со статусом 404 и описанием ошибки
+--      в осатльных случах возвращает ответ со статусом 200 и значение
 local function get(request)
     local key, value, set, response
     log.info('Get', key)
@@ -117,6 +121,9 @@ local function get(request)
     return response
 end
 
+-- Функця удаления пары ключ-значение из хранилища по ключу:
+--      если ключа нет в хранилище, возвращает ответ со статусом 404 и описанием ошибки
+--      в осатльных случах удаляет пару и возвращает ответ со статусом 200 и значение
 local function delete(request)
     local key, value, set, response
     log.info('Delite')
