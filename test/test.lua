@@ -35,7 +35,7 @@ taptest:test('Method POST', function(test)
             adress = adress,
             jsonRequest = json.encode({ key = 'key', value = 'value'}),
             status = 200,
-            jsonAnswer = json.encode({ message = 'Set was inserted'})
+            jsonAnswer = json.encode({ message = 'OK'})
         },
         {
             method = 'post',
@@ -70,7 +70,7 @@ taptest:test('Method POST', function(test)
             adress = adress,
             jsonRequest = json.encode({ key = 'key1', value = 'value1'}),
             status = 200,
-            jsonAnswer = json.encode({ message = 'Set was inserted'}),
+            jsonAnswer = json.encode({ message = 'OK'}),
         }
     }
     test_cases(cases)
