@@ -1,13 +1,11 @@
 build:
 		docker build --tag kv-server ./app
-		docker build --tag kv-test ./test
-		docker network create test-network
 run:
-		docker run --name kv-server-container -d -it -p 8080:8080 --net=test-network --rm kv-server
-tst:
-		docker run --name kv-test-container -it --rm --link kv-server-container --net=test-network kv-test
+		docker run --name kv-server-container -d -it -p 8080:8080 --rm kv-server sh
+test-server:
+		docker cp ./test/test.lua kv-server-container:/opt/tarantool/test.lua
+		docker exec -it kv-server-container tarantool /opt/tarantool/test.lua
 stop:
 		docker stop kv-server-container
-		docker network rm test-network
 logs:
-		cat server.log
+		docker exec -it kv-server-container cat server.log

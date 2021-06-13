@@ -8,7 +8,7 @@ local log = require('log')
 
 -- Вызываем конструктор для http сервера и роутера
 local server = http_server.new(
-    nil,
+    '127.0.0.1',
     8080
 )
 local router = http_router.new()
