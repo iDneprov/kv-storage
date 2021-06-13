@@ -8,8 +8,8 @@ local log = require('log')
 
 -- Вызываем конструктор для http сервера и роутера
 local server = http_server.new(
-    os.getenv("KV_ADRES"),
-    os.getenv("KV_PORT")
+    nil,
+    8080
 )
 local router = http_router.new()
 
