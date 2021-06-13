@@ -11,7 +11,7 @@ taptest:plan(4)
 taptest:diag("KV-storage test")
 
 -- Задаем адрес сервиса
-local adress = 'http://127.0.0.1:8081/kv/'
+local adress = 'http://127.0.0.1:8080/kv/'
 
 
 -- Функция запуска тестов
