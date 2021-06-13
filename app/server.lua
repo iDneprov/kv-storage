@@ -7,7 +7,7 @@ local http_server = require('http.server')
 local log = require('log')
 
 -- Получаем адрес и порт из переменных окуржения
-local port = os.getenv('PORT')
+local port = 8080--os.getenv('PORT')
 
 -- Вызываем конструктор для http сервера и роутера
 local server = http_server.new('0.0.0.0', port)

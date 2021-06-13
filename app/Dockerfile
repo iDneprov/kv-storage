@@ -1,6 +1,5 @@
 FROM tarantool/tarantool:2
 
-ENV ADRES="127.0.0.1:8080"
 ENV PORT=8080
 
 COPY ./ /opt/tarantool
