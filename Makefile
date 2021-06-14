@@ -9,7 +9,7 @@ run:
 test-server:
 		docker cp ./test/test.lua $(CONTAINER_NAME):/opt/tarantool/test.lua
 		docker exec -it $(CONTAINER_NAME) tarantool /opt/tarantool/test.lua
-stop:
-		docker stop $(CONTAINER_NAME)
 logs:
 		docker exec -it $(CONTAINER_NAME) cat server.log
+stop:
+		docker stop $(CONTAINER_NAME)
