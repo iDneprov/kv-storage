@@ -1,14 +1,15 @@
 PORT=8080
+IMAGE_NAME=kv-stor-image
+CONTAINER_NAME=kv-stor-container
 
 build:
-		echo $(PORT)
-		docker build --tag kv-server --build-arg PORT=$(PORT) ./app
+		docker build --tag $(IMAGE_NAME) --build-arg PORT=$(PORT) ./app
 run:
-		docker run --name kv-server-container -d -it -p $(PORT):8080 --rm kv-server sh
+		docker run --name $(CONTAINER_NAME) -d -it -p $(PORT):8080 --rm $(IMAGE_NAME) sh
 test-server:
-		docker cp ./test/test.lua kv-server-container:/opt/tarantool/test.lua
-		docker exec -it kv-server-container tarantool /opt/tarantool/test.lua
+		docker cp ./test/test.lua $(CONTAINER_NAME):/opt/tarantool/test.lua
+		docker exec -it $(CONTAINER_NAME) tarantool /opt/tarantool/test.lua
 stop:
-		docker stop kv-server-container
+		docker stop $(CONTAINER_NAME)
 logs:
-		docker exec -it kv-server-container cat server.log
+		docker exec -it $(CONTAINER_NAME) cat server.log
