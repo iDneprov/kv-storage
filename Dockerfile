@@ -8,4 +8,4 @@ WORKDIR /opt/tarantool
 RUN apk add --virtual .build-deps gcc g++ make cmake git
 RUN tarantoolctl rocks install http
 
-ENTRYPOINT ["tarantool", "./app/server.lua"]
+ENTRYPOINT ["tarantool", "server.lua"]
