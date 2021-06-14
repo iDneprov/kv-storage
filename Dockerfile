@@ -1,6 +1,6 @@
 FROM tarantool/tarantool:2
 
-ENV PORT=8080
+ENV PORT=80
 
 COPY ./ /opt/tarantool
 WORKDIR /opt/tarantool
